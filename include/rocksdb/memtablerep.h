@@ -99,6 +99,9 @@ class MemTableRep {
   // collection, and no concurrent modifications to the table in progress
   virtual void Insert(KeyHandle handle) = 0;
 
+  virtual bool SupportsBatchInsert() const { return false; }
+  virtual void InsertBatch(const std::vector<std::pair<Slice, Slice>>& batch) {}
+
   // Same as ::Insert
   // Returns false if MemTableRepFactory::CanHandleDuplicatedKey() is true and
   // the <key, seq> already exists.

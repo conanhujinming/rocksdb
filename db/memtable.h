@@ -635,6 +635,8 @@ class MemTable final : public ReadOnlyMemTable {
              bool allow_concurrent = false,
              MemTablePostProcessInfo* post_process_info = nullptr,
              void** hint = nullptr);
+  bool SupportsBatchInsert() const;
+  void InsertBatch(const std::vector<std::pair<Slice, Slice>>& batch);
 
   using ReadOnlyMemTable::Get;
   bool Get(const LookupKey& key, std::string* value,

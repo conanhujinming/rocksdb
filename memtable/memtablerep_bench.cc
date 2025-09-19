@@ -598,7 +598,20 @@ int main(int argc, char** argv) {
         FLAGS_if_log_bucket_dist_when_flash, FLAGS_threshold_use_skiplist));
     options.prefix_extractor.reset(
         ROCKSDB_NAMESPACE::NewFixedPrefixTransform(FLAGS_prefix_length));
-  } else {
+  } else if (FLAGS_memtablerep == "columnar") {
+
+    size_t active_block_size_bytes = 4 * 1024 * 1024;
+    size_t num_shards = 16;
+
+    factory.reset(ROCKSDB_NAMESPACE::ColumnarRepFactory(
+      active_block_size_bytes, num_shards)
+    );
+    // options.memtable_factory.reset(
+    //     new ROCKSDB_NAMESPACE::ColumnarRepFactory(active_block_size_bytes, num_shards)
+    // );
+  }
+  
+  else {
     ROCKSDB_NAMESPACE::ConfigOptions config_options;
     config_options.ignore_unsupported_options = false;
 

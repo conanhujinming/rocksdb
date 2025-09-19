@@ -214,6 +214,10 @@ class DBImpl : public DB {
   Status Put(const WriteOptions& options, ColumnFamilyHandle* column_family,
              const Slice& key, const Slice& ts, const Slice& value) override;
 
+  Status InsertBatch(
+    const WriteOptions& options, ColumnFamilyHandle* column_family,
+    const std::vector<std::pair<Slice, Slice>>& batch) override;
+
   using DB::PutEntity;
   Status PutEntity(const WriteOptions& options,
                    ColumnFamilyHandle* column_family, const Slice& key,

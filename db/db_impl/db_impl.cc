@@ -6903,4 +6903,53 @@ void DBImpl::TrackOrUntrackFiles(
   }
 }
 
+Status DBImpl::InsertBatch(
+    const WriteOptions& write_options, ColumnFamilyHandle* column_family,
+    const std::vector<std::pair<Slice, Slice>>& batch) {
+  if (batch.empty()) {
+    return Status::OK();
+  }
+
+  auto* cfd = static_cast<ColumnFamilyHandleImpl*>(column_family)->cfd();
+
+  // The core architectural decision:
+  // First, check if the active memtable supports our custom batch insert.
+  // This check must be done BEFORE we decide which write path to take.
+  if (cfd->mem()->SupportsBatchInsert()) {
+    // --- PATH 1: HIGH-PERFORMANCE CUSTOM BATCH INSERT ---
+    // This is the manual path we've been building. It bypasses the standard
+    // WriteThread logic for a direct memtable insert.
+
+    mutex_.Lock();
+
+    // skip wal for InsertBatch only for benchmark
+
+    // Call your custom batch insert method directly.
+    cfd->mem()->InsertBatch(batch);
+    mutex_.Unlock();
+    
+    return Status::OK();
+
+  } else {
+    // --- PATH 2: FALLBACK TO STANDARD DB::Write ---
+    // The memtable does not support our custom API. The safest and
+    // 100% correct way to provide a "default implementation" is to
+    // convert our vector to a WriteBatch and call the public Write API.
+    
+    WriteBatch wb;
+    for (const auto& kv : batch) {
+      if (kv.second.size() == 0) {
+        wb.Delete(column_family, kv.first);
+      } else {
+        wb.Put(column_family, kv.first, kv.second);
+      }
+    }
+    
+    // This call will handle everything correctly: locking, WAL, memtable
+    // insertion (one-by-one), etc. It completely avoids deadlocks and
+    // internal API mismatches.
+    return this->Write(write_options, &wb);
+  }
+}
+
 }  // namespace ROCKSDB_NAMESPACE

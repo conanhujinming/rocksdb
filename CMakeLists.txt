@@ -782,6 +782,7 @@ set(SOURCES
         memtable/skiplistrep.cc
         memtable/vectorrep.cc
         memtable/wbwi_memtable.cc
+        memtable/columnar_memtable_rep.cc
         memtable/write_buffer_manager.cc
         monitoring/histogram.cc
         monitoring/histogram_windowing.cc

@@ -407,6 +407,12 @@ class DB {
   // EventListener::OnErrorRecoveryBegin
   virtual Status Resume() { return Status::NotSupported(); }
 
+  virtual Status InsertBatch(
+      const WriteOptions& options, ColumnFamilyHandle* column_family,
+      const std::vector<std::pair<Slice, Slice>>& batch) {
+    return Status::NotSupported("InsertBatch is not implemented by this DB.");
+  }
+
   // Close the DB by releasing resources, closing files etc. This should be
   // called before calling the destructor so that the caller can get back a
   // status in case there are any errors. This will not fsync the WAL files.

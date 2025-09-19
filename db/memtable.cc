@@ -1870,4 +1870,13 @@ const Slice& MemTable::GetNewestUDT() const {
   return newest_udt_;
 }
 
+bool MemTable::SupportsBatchInsert() const {
+  return table_->SupportsBatchInsert();
+}
+
+void MemTable::InsertBatch(const std::vector<std::pair<Slice, Slice>>& batch) {
+  // It simply forwards the call to the underlying MemTableRep.
+  table_->InsertBatch(batch);
+}
+
 }  // namespace ROCKSDB_NAMESPACE

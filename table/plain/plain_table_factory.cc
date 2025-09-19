@@ -17,6 +17,7 @@
 #include "table/plain/plain_table_builder.h"
 #include "table/plain/plain_table_reader.h"
 #include "util/string_util.h"
+#include "memtable/columnar_memtable_rep.h"
 
 namespace ROCKSDB_NAMESPACE {
 static std::unordered_map<std::string, OptionTypeInfo> plain_table_type_info = {
@@ -212,6 +213,32 @@ static int RegisterBuiltinMemTableRepFactory(ObjectLibrary& library,
          std::unique_ptr<MemTableRepFactory>* /*guard*/, std::string* errmsg) {
         *errmsg = "cuckoo hash memtable is not supported anymore.";
         return nullptr;
+      });
+  library.AddFactory<MemTableRepFactory>(
+      // The first argument is the pattern.
+      // We allow both "columnar" and "ColumnarRepFactory" as names.
+      // We also allow an optional argument after a colon, e.g., "columnar:16" for shard_count
+      ObjectLibrary::PatternEntry("ColumnarRepFactory", true)
+          .AnotherName("columnar")
+          .AddNumber(":"),
+      // The second argument is a lambda that creates the factory instance.
+      [](const std::string& uri, std::unique_ptr<MemTableRepFactory>* guard,
+         std::string* /*errmsg*/) {
+        // Default values
+        size_t write_buffer_size = 16 * 1024 * 112; // 16K rows
+        size_t shard_count = 16;
+
+        auto colon = uri.find(':');
+        if (colon != std::string::npos) {
+            // If a number is provided (e.g., columnar:32), parse it as shard_count.
+            shard_count = ParseSizeT(uri.substr(colon + 1));
+        }
+        
+        // You could also parse write_buffer_size from a more complex URI string
+        // but for db_bench, it's usually passed via a separate command-line arg.
+
+        guard->reset(new ColumnarRepFactory(write_buffer_size, shard_count));
+        return guard->get();
       });
 
   size_t num_types;
